@@ -20,6 +20,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.maps.android.heatmaps.HeatmapTileProvider;
+import com.google.maps.android.heatmaps.WeightedLatLng;
 
 public class HeatMapActivity extends Activity {
 	
@@ -56,7 +57,7 @@ public class HeatMapActivity extends Activity {
 	private void generateHeatMap() {
 		//center to Suburban Station
 		getMap().moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(39.9538889, -75.1677778), 10));
-		List<LatLng> list = null;
+		List<WeightedLatLng> list = null;
 		// Get the data: latitude/longitude positions of stations.
 	    try {
 	        list = readItems(R.raw.regional_rail_stop_crime_count);
@@ -66,7 +67,8 @@ public class HeatMapActivity extends Activity {
 	    
 	 // Create a heat map tile provider, passing it the latlngs of the police stations.
 	    mProvider = new HeatmapTileProvider.Builder()
-	        .data(list)
+	    	.weightedData(list)
+	    	.radius(40)
 	        .build();
 	    // Add a tile overlay to the map, using the heat map tile provider.
 	    mOverlay = mMap.addTileOverlay(new TileOverlayOptions().tileProvider(mProvider));
@@ -77,8 +79,8 @@ public class HeatMapActivity extends Activity {
         return mMap;
     }
 	
-	private ArrayList<LatLng> readItems(int resource) throws JSONException {
-		ArrayList<LatLng> list = new ArrayList<LatLng>();
+	private ArrayList<WeightedLatLng> readItems(int resource) throws JSONException {
+		ArrayList<WeightedLatLng> list = new ArrayList<WeightedLatLng>();
         InputStream inputStream = getResources().openRawResource(resource);
         Scanner scanner = new Scanner(inputStream);
         String json = scanner.useDelimiter("\\A").next();
@@ -89,7 +91,8 @@ public class HeatMapActivity extends Activity {
             JSONObject stationObject = stations.getJSONObject(i);
             double lat = stationObject.getDouble("stop_lat");
             double lng = stationObject.getDouble("stop_lon");
-            list.add(new LatLng(lat, lng));
+            double intensity = stationObject.getDouble("count");
+            list.add(new WeightedLatLng(new LatLng(lat, lng),intensity));
         }
         
         return list;
